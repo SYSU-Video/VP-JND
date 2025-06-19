@@ -1,95 +1,81 @@
-import os
-import sys
+# -*- coding: utf-8 -*-
+import tensorflow as tf
+import numpy as np
+import cv2
 
-block_size = 5
-t = 4 # threshold
+class SSIM(object):
+    def __init__(self, k1=0.01, k2=0.02, L=1, window_size=11):
+        self.k1 = k1
+        self.k2 = k2           # constants for stable
+        self.L = L             # the value range of input image pixels
+        self.WS = window_size
 
-def Binary_block(L, start,last):
-    QFs = 0
-    block = block_size
-    start_idx = start
-    #print('start_idx', start_idx)
-    last_idx = last
-    #print('last_idx', last_idx)
-    mid = int((start_idx + last_idx + 1) / 2)
-    #print('mid', mid)
-    block_R = sum(L[mid-1 : mid + block-1])
-    #print('block_R', block_R)
-    block_L = sum(L[mid - block-1 : mid-1])
-    #print('block_L', block_L)
-    if block_R != 0:   # right
-        if block_R > t:
-            Binary_bloack(L, mid, last_idx)
-        else:
-            if block_L == block_size:
-                for j in range(0, 5, 1):
-                    if block_R == 1:  # case 1   10000
-                        if L[mid + j - 1] == 1:
-                            QFs = mid + j
-                            print('QFs', QFs)
-                            break
-                    else:
-                        if L[mid + j-1] == 0 and L[mid + j] == 1:  # case 2   00111
-                            QFs = mid + j+1
-                            print('QFs', QFs)
-                            break
-                        if L[mid + j-1] == 1 and L[mid + j] == 0:  # case 2   11100
-                            QFs = mid + j
-                            print('QFs', QFs)
-                            break
-            else:
-                tempt1 = 0
-                tempt2 = 0
-                for j in range(0, 5, 1):
-                    if L[mid + j -1] == 1:
-                        #print('data1', mid + j)
-                        tempt1 = mid + j
-                        break
-                for i in range(0, 5, 1):
-                    if L[mid - i -1] == 1:
-                        #print('data2', mid - j)
-                        tempt2 = mid - i
-                        break
-                QFs = int((tempt1 + tempt2)/2)
-                print('QFs', QFs)
+    def _tf_fspecial_gauss(self, size, sigma=1.5):
+        """Function to mimic the 'fspecial' gaussian MATLAB function"""
+        x_data, y_data = np.mgrid[-size//2 + 1:size//2 + 1, -size//2 + 1:size//2 + 1]
 
-    else:
-        if block_L < t:   #  left
-            Binary_bloack(L, start_idx, mid)
-        else:
-            if block_L == block_size:
-                    QFs = mid - 1
-                    print('QFs', QFs)
-            else:
-                for j in range(0, 5, 1):
-                    if L[mid + j - 1] == 0 and L[mid + j] == 1:  # case 1   01111
-                        QFs = mid + j + 1
-                        print('QFs', QFs)
-                        break
-                    if L[mid + j - 1] == 1 and L[mid + j] == 0:  # case 2   11110
-                        QFs = mid + j
-                        print('QFs', QFs)
-                        break
+        x_data = np.expand_dims(x_data, axis=-1)
+        x_data = np.expand_dims(x_data, axis=-1)
 
+        y_data = np.expand_dims(y_data, axis=-1)
+        y_data = np.expand_dims(y_data, axis=-1)
 
-if __name__ == '__main__':
-    QF = 0
-    for i in range(1, 50, 1):
-        txt_tables = []
-        SQF_DATA_DIR = 'G:/JND/data_record/first_jnd/'
-        txt_file = open(SQF_DATA_DIR + 'result_image' + str(i) + '.txt', 'r')
-        lines = txt_file.readline() # 读取第一行
-        while lines:
-            jnd_pos_seq_str = lines.lstrip().rstrip().split(',')
-            jnd_pos_seq = [i for i in jnd_pos_seq_str]
-            JND_first_point = int(jnd_pos_seq[1])
-            JND = jnd_pos_seq[0]
-            #print(JND, JND_first_point)
-            txt_tables.append(JND_first_point)
-            lines = txt_file.readline()
-        #print(txt_tables)
-        label = txt_tables
-        del(txt_tables)
-        left = 0
-        right = len(label)
-        QF = Binary_block(label, left, right)
+        x = tf.constant(x_data, dtype=tf.float32)
+        y = tf.constant(y_data, dtype=tf.float32)
+
+        g = tf.exp(-((x**2 + y**2)/(2.0*sigma**2)))
+        return g / tf.reduce_sum(g)
+
+    def ssim_loss(self, img1, img2):
+        """
+        The function is to calculate the ssim score
+        """
+        window = self._tf_fspecial_gauss(size=self.WS)  # output size is (window_size, window_size, 1, 1)
+        #import pdb
+        #pdb.set_trace()
+
+        (_, _, _, channel) = img1.shape.as_list()
+
+        window = tf.tile(window, [1, 1, channel, 1])
+
+        # here we use tf.nn.depthwise_conv2d to imitate the group operation in torch.nn.conv2d
+        mu1 = tf.nn.depthwise_conv2d(img1, window, strides = [1, 1, 1, 1], padding = 'VALID')
+        mu2 = tf.nn.depthwise_conv2d(img2, window, strides = [1, 1, 1, 1], padding = 'VALID')
+
+        mu1_sq = mu1 * mu1
+        mu2_sq = mu2 * mu2
+        mu1_mu2 = mu1 * mu2
+
+        img1_2 = img1*img1#tf.pad(img1*img1, [[0,0], [0, self.WS//2], [0, self.WS//2], [0,0]], "CONSTANT")
+        sigma1_sq = tf.subtract(tf.nn.depthwise_conv2d(img1_2, window, strides = [1 ,1, 1, 1], padding = 'VALID') , mu1_sq)
+        img2_2 = img2*img2#tf.pad(img2*img2, [[0,0], [0, self.WS//2], [0, self.WS//2], [0,0]], "CONSTANT")
+        sigma2_sq = tf.subtract(tf.nn.depthwise_conv2d(img2_2, window, strides = [1, 1, 1, 1], padding = 'VALID') ,mu2_sq)
+        img12_2 = img1*img2#tf.pad(img1*img2, [[0,0], [0, self.WS//2], [0, self.WS//2], [0,0]], "CONSTANT")
+        sigma1_2 = tf.subtract(tf.nn.depthwise_conv2d(img12_2, window, strides = [1, 1, 1, 1], padding = 'VALID') , mu1_mu2)
+
+        c1 = (self.k1*self.L)**2
+        c2 = (self.k2*self.L)**2
+
+        ssim_map = ((2*mu1_mu2 + c1)*(2*sigma1_2 + c2)) / ((mu1_sq + mu2_sq + c1)*(sigma1_sq + sigma2_sq + c2))
+        #print('ssim_map:', ssim_map)
+        return tf.reduce_mean(ssim_map)
+
+if __name__ == "__main__":
+
+    #img1 = tf.ones((1,128,128,3))
+    #img2 = tf.ones((1,128,128,3))
+    DIR = '/home/siat-video/data/MCL-JCI/distorted_image'
+    ref_img = DIR + '/ImageJND_SRC07/ImageJND_SRC07_100.jpg'
+    dis_img = DIR + '/ImageJND_SRC07/ImageJND_SRC07_001.jpg'
+
+    img1 = cv2.imread(ref_img).astype('float32')
+    img2 = cv2.imread(dis_img).astype('float32')
+    # results using tensorflow
+    loss_ssim = SSIM(k1=0.01, k2=0.02, L=255, window_size=11)
+    img1_tensor = tf.expand_dims(tf.constant(img1), 0)
+    img2_tensor = tf.expand_dims(tf.constant(img2), 0)
+    print('img1_tensor:', img1_tensor.shape)
+    print('img2_tensor:', img2_tensor.shape)
+    loss_results = loss_ssim.ssim_loss(img1_tensor, img2_tensor)
+    sess = tf.Session()
+    print(1-sess.run(loss_results))
