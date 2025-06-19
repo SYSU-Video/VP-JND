@@ -61,21 +61,15 @@ class SSIM(object):
         return tf.reduce_mean(ssim_map)
 
 if __name__ == "__main__":
-
     #img1 = tf.ones((1,128,128,3))
     #img2 = tf.ones((1,128,128,3))
-    DIR = '/home/siat-video/data/MCL-JCI/distorted_image'
-    ref_img = DIR + '/ImageJND_SRC07/ImageJND_SRC07_100.jpg'
-    dis_img = DIR + '/ImageJND_SRC07/ImageJND_SRC07_001.jpg'
-
+    ref_img = 'ImageJND_SRC07_100.jpg'
+    dis_img = 'ImageJND_SRC07_099.jpg'
     img1 = cv2.imread(ref_img).astype('float32')
     img2 = cv2.imread(dis_img).astype('float32')
-    # results using tensorflow
     loss_ssim = SSIM(k1=0.01, k2=0.02, L=255, window_size=11)
     img1_tensor = tf.expand_dims(tf.constant(img1), 0)
     img2_tensor = tf.expand_dims(tf.constant(img2), 0)
-    print('img1_tensor:', img1_tensor.shape)
-    print('img2_tensor:', img2_tensor.shape)
     loss_results = loss_ssim.ssim_loss(img1_tensor, img2_tensor)
     sess = tf.Session()
     print(1-sess.run(loss_results))
