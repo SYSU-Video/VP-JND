@@ -7,7 +7,7 @@
 
 Official code of "VP-JND:Visual Perception Assisted Deep Picture-Wise Just Noticeable Difference Prediction Model for Image Compression" \
 [[paper]](https://ieeexplore.ieee.org/document/11112672) [[code]](https://github.com/SYSU-Video/VP-JND) \
-[Yun Zhang](https://codec.siat.ac.cn/yunzhang/), Shisheng Zhang(https://orcid.org/0009-0006-5527-7308), [Na Li](https://hpcc.siat.ac.cn/homepage/lina.html), Chunlin Fan, [Raouf Hamzaoui](http://www.tech.dmu.ac.uk/~hamzaoui/) \
+[Yun Zhang](https://codec.siat.ac.cn/yunzhang/), [Shisheng Zhang](https://orcid.org/0009-0006-5527-7308), [Na Li](https://hpcc.siat.ac.cn/homepage/lina.html), [Chunlin Fan](https://ieeexplore.ieee.org/author/37086341710), [Raouf Hamzaoui](http://www.tech.dmu.ac.uk/~hamzaoui/) \
 *IEEE Transactions on Circuits and Systems for Video Technology (Early Access)*
 
 ## Abstract
