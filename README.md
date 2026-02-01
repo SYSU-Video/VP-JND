@@ -13,8 +13,9 @@ Official code of "VP-JND:Visual Perception Assisted Deep Picture-Wise Just Notic
 ## Abstract
 <p align="justify">
 The Picture-Wise Just Noticeable Difference (PW-JND) represents the visibility threshold of human vision when viewing distorted images. The PW-JND plays an important role in perceptual image processing and compression. However, predicting the PW-JND is challenging due to its dependence on image content, viewing conditions, and the viewer. In this paper, we propose a visual perception-assisted deep PW-JND (VP-JND) prediction model for image compression that combines data-driven methods with the perceptual mechanisms of human vision. First, we identify a correlation between PW-JND and conventional pixel-wise JND. Based on this observation, we design the VP-JND model, consisting of a pixel-wise JND model, a deep binary classifier (VP-JNDnet) and a binary block search algorithm for refining predictions. VP-JNDnet exploits the pixel-wise JND map of the original image to predict whether a compressed image is perceptually lossless. In addition, the model incorporates visual importance of content and regions by using a mixed attention module and calculating perceptual loss during training. Experimental results show that VP-JND achieved an average precision of 94.82% and a mean absolute difference of 3.92 in predicting the JPEG quality factor corresponding to the PW-JND on the MCL-JCI dataset, outperforming state-of-the-art JND models. When applied to perceptual lossless image coding, the predicted PW-JND enabled average bit rate savings of 89.35% for JPEG compression on MCL-JCI and 85.46%/41.13% for JPEG/BPG compression on KonJND-1k. These savings were relative to images compressed at the lowest distortion level. The source codes and trained models are publicly available at https://github.com/SYSU-Video/VP-JND.
-</p>
+
 ## Framework
+</p>
 <p align="center">
   <img src="VPJND.png" alt="Framework Overview" width="800"/>
 </p>
